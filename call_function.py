@@ -16,22 +16,18 @@ available_functions = types.Tool(
 )
 
 def call_function(function_call_part, verbose=False):
-    function_name = function_call_part.name
-    function_call_part.args.pop('working_directory', None)
-    print(f'Function: {function_name}')
     if verbose:
         print(f"Calling function: {function_call_part.name}({function_call_part.args})")
     else:
         print(f" - Calling function: {function_call_part.name}")
-    if function_name == 'get_files_info':
-        function_result = get_files_info(working_directory=WORKING_DIR, **function_call_part.args)
-    elif function_name == 'get_file_content':
-        function_result = get_file_content(working_directory=WORKING_DIR, **function_call_part.args)
-    elif function_name == 'run_python_file':
-        function_result = run_python_file(working_directory=WORKING_DIR, **function_call_part.args)
-    elif function_name == 'write_file':
-        function_result = write_file(working_directory=WORKING_DIR, **function_call_part.args)
-    else:
+    function_map = {
+        "get_files_info": get_files_info,
+        "get_file_content": get_file_content,
+        "run_python_file": run_python_file,
+        "write_file": write_file,
+    }
+    function_name = function_call_part.name
+    if function_name not in function_map:
         return types.Content(
             role="tool",
             parts=[
@@ -41,7 +37,9 @@ def call_function(function_call_part, verbose=False):
                 )
             ],
         )
-    
+    args = dict(function_call_part.args)
+    args["working_directory"] = WORKING_DIR
+    function_result = function_map[function_name](**args)
     return types.Content(
         role="tool",
         parts=[
